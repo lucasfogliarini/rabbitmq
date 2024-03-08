@@ -109,14 +109,17 @@ namespace RabbitMQ
                 catch (Exception ex)
                 {
                     attempts++;
-                    Console.WriteLine($"Erro ao criar conexão: {ex.Message}");
+					Console.WriteLine($"Erro ao criar conexão: {ex.Message}. Inner Exception: {ex.InnerException?.Message}");
+					Console.WriteLine();
                     if (attempts >= maxRetries)
                     {
-                        Console.WriteLine($"Número máximo de tentativas excedido ({maxRetries}).");
+						Console.WriteLine($"Número máximo de tentativas excedido ({maxRetries}).");
+						Console.WriteLine();
                         throw ex;
                     }
 
                     Console.WriteLine($"Tentando novamente em {retryIntervalSec} segundos...");
+                    Console.WriteLine();
                     Thread.Sleep(retryIntervalSec * 1000);
                 }
             }
@@ -136,16 +139,16 @@ namespace RabbitMQ
                 Arguments = $"run -d --hostname {hostname} --name {containerName} -p {ManagementPort}:15672 -p {Port}:5672 {envVars} {dockerImage}",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
-            };
-            process.Start();
-            
-            process.WaitForExit();
+		    };
+			process.OutputDataReceived += (sender, e) => Console.WriteLine(e.Data);
+			process.ErrorDataReceived += (sender, e) => Console.WriteLine(e.Data);
 
-            string output = process.StandardOutput.ReadToEnd();
-            Console.WriteLine(output);
+			process.Start();
 
-            string error = process.StandardError.ReadToEnd();
-            Console.WriteLine(error);
+			process.BeginOutputReadLine();  
+            process.BeginErrorReadLine();
+
+			process.WaitForExit();
         }
     }
 }
